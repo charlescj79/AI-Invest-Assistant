@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.env
+invest_assistant.db
+.DS_Store
+.git/
+.claude/

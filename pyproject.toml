@@ -1,0 +1,51 @@
+[project]
+name = "ai-invest-assistant"
+version = "0.1.0"
+description = "A research-oriented investment assistant for market data, news, backtests, and human-reviewed trade suggestions."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "anthropic>=0.40.0",
+  "apscheduler>=3.10.4",
+  "fastapi>=0.115.0",
+  "feedparser>=6.0.11",
+  "httpx>=0.27.0",
+  "numpy>=2.0.0",
+  "pandas>=2.2.0",
+  "pydantic>=2.8.0",
+  "pydantic-settings>=2.4.0",
+  "python-dotenv>=1.0.1",
+  "requests>=2.32.0",
+  "sqlalchemy>=2.0.32",
+  "streamlit>=1.40.0",
+  "uvicorn[standard]>=0.30.0",
+  "yfinance>=0.2.43"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.24.0",
+  "ruff>=0.6.0"
+]
+
+[project.scripts]
+ingest-market = "scripts.ingest_market:main"
+ingest-news = "scripts.ingest_news:main"
+run-backtest = "scripts.run_backtest:main"
+generate-daily-brief = "scripts.generate_daily_brief:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "scripts"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
