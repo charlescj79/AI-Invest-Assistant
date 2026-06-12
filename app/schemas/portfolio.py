@@ -52,13 +52,43 @@ class MADivergenceRebalanceParams(BaseModel):
     allow_cash: bool = True
 
 
+class FixedRebalanceParams(BaseModel):
+    rebalance_frequency_days: int = Field(default=20, ge=1)
+    allow_cash: bool = False
+
+
+class MomentumFilterParams(BaseModel):
+    lookback_days: int = Field(default=63, ge=5)
+    rebalance_frequency_days: int = Field(default=20, ge=1)
+    negative_momentum_multiplier: float = Field(default=0.25, ge=0, le=1)
+    positive_momentum_multiplier: float = Field(default=1.0, ge=0, le=2)
+    allow_cash: bool = True
+
+
+class VolatilityTargetParams(BaseModel):
+    lookback_days: int = Field(default=63, ge=5)
+    target_annual_volatility: float = Field(default=0.15, gt=0, le=2)
+    min_scale: float = Field(default=0.25, ge=0, le=1)
+    max_scale: float = Field(default=1.25, ge=1, le=5)
+    allow_cash: bool = True
+
+
 class PortfolioBacktestRequest(PortfolioRequestMixin):
     initial_cash: float = Field(default=100_000.0, gt=0)
     fee_bps: float = Field(default=1.0, ge=0)
     slippage_bps: float = Field(default=2.0, ge=0)
+    roll_cost_bps: float = Field(default=0.0, ge=0)
     optimization_method: Literal["inverse_volatility", "mean_variance_simple"] = "inverse_volatility"
-    rebalance_strategy: Literal["ma_deviation_200"] = "ma_deviation_200"
+    rebalance_strategy: Literal[
+        "ma_deviation_200",
+        "fixed_rebalance",
+        "momentum_filter",
+        "volatility_target",
+    ] = "ma_deviation_200"
     rebalance_params: MADivergenceRebalanceParams = Field(default_factory=MADivergenceRebalanceParams)
+    fixed_rebalance_params: FixedRebalanceParams = Field(default_factory=FixedRebalanceParams)
+    momentum_filter_params: MomentumFilterParams = Field(default_factory=MomentumFilterParams)
+    volatility_target_params: VolatilityTargetParams = Field(default_factory=VolatilityTargetParams)
 
 
 class PortfolioWeightRecommendation(BaseModel):
@@ -72,6 +102,10 @@ class PortfolioWeightRecommendation(BaseModel):
     latest_close: float | None = None
     ma_value: float | None = None
     ma_deviation: float | None = None
+    contract_multiplier: float | None = None
+    margin_rate: float | None = None
+    notional_exposure: float | None = None
+    margin_requirement: float | None = None
     reason: str
 
 
@@ -84,6 +118,7 @@ class PortfolioOptimizeResponse(BaseModel):
 class PortfolioBacktestResponse(BaseModel):
     run_id: int | None = None
     metrics: BacktestMetricRead
+    risk_metrics: dict = Field(default_factory=dict)
     recommendations: list[PortfolioWeightRecommendation]
     cash_weight: float
     equity_curve: list[dict]

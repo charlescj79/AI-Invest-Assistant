@@ -12,7 +12,9 @@ AI Invest Assistant is a research-oriented investment assistant for US stocks, E
 - Futures roots supported in MVP: `GC` gold, `SI` silver, `HG` copper, `NQ` Nasdaq 100 E-mini. These map to Yahoo Finance tickers `GC=F`, `SI=F`, `HG=F`, and `NQ=F` during ingestion.
 - Daily OHLCV ingestion
 - News ingestion and deduplication
-- Basic strategies and daily backtesting
+- Basic single-asset and portfolio strategies with daily backtesting
+- Portfolio strategies: 200-day moving-average deviation, fixed-ratio rebalance, momentum filter, and volatility target
+- Portfolio risk metrics: correlation matrix, VaR/CVaR, and max concentration
 - Claude structured outputs for market briefs and trade suggestions
 - Deterministic risk gate and mandatory human confirmation
 
@@ -33,6 +35,18 @@ Open <http://127.0.0.1:8000/docs>.
 ```bash
 cp .env.example .env
 docker compose up --build
+```
+
+Run local verification before deployment:
+
+```bash
+scripts/deploy/verify_local.sh
+```
+
+Run the Docker stack with the helper script:
+
+```bash
+scripts/deploy/run_local.sh
 ```
 
 - API: <http://127.0.0.1:8000/docs>
@@ -84,6 +98,17 @@ Use `POST /portfolios/optimize` to recommend strategic weights from user-defined
 }
 ```
 
+### Portfolio Strategies
+
+Supported portfolio strategies:
+
+- `ma_deviation_200`: reduce allocations above the moving-average axis and increase allocations below it.
+- `fixed_rebalance`: periodically reset to strategic weights.
+- `momentum_filter`: reduce assets with negative momentum and keep/increase assets with positive momentum.
+- `volatility_target`: scale total exposure toward a target annualized volatility.
+
+The Streamlit UI also supports saving/loading portfolio templates in `portfolio_templates.json`.
+
 ### 200-Day Moving Average Rebalance
 
 Use `POST /portfolios/backtest` to apply a 200-day moving-average deviation strategy. Above the moving average, the system gradually lowers tactical allocation; below it, the system gradually raises tactical allocation.
@@ -113,7 +138,9 @@ Use `POST /portfolios/backtest` to apply a 200-day moving-average deviation stra
 }
 ```
 
-MVP limitations: daily close only, long-only, no leverage, no futures margin or contract multiplier modeling, no futures roll modeling, and cash earns 0.
+The response includes backtest metrics plus risk metrics such as correlation matrix, VaR 95%, CVaR 95%, max concentration, futures contract multipliers, estimated notional exposure, and estimated margin requirement.
+
+MVP limitations: daily close only, long-only, no leverage, estimated futures margin only, simplified roll-cost modeling via `roll_cost_bps`, and cash earns 0.
 
 ## Safety Boundary
 

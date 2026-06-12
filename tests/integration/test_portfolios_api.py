@@ -75,12 +75,33 @@ def test_portfolio_optimize_and_backtest(client):
     body = backtest.json()
     assert body["run_id"] is not None
     assert body["metrics"] is not None
+    assert body["risk_metrics"]["correlation_matrix"]
+    assert body["risk_metrics"]["max_concentration"] >= 0
     assert len(body["recommendations"]) == 3
+    assert body["recommendations"][0]["contract_multiplier"] is not None
+    assert body["recommendations"][0]["margin_requirement"] is not None
     assert body["latest_target_weights"]
     assert body["equity_curve"]
 
 
-def test_portfolio_optimize_rejects_missing_prices(client):
+def test_portfolio_backtest_supports_additional_strategies(client):
+    base_payload = {
+        "assets": [
+            {"symbol": "GC", "min_weight": 0.1, "max_weight": 0.5, "current_weight": 0.3},
+            {"symbol": "SI", "min_weight": 0.0, "max_weight": 0.3, "current_weight": 0.1},
+            {"symbol": "NQ", "min_weight": 0.2, "max_weight": 0.6, "current_weight": 0.5},
+        ],
+        "start": "2023-01-01",
+        "end": "2023-10-31",
+        "initial_cash": 100000,
+        "optimization_method": "inverse_volatility",
+    }
+    for strategy in ["fixed_rebalance", "momentum_filter", "volatility_target"]:
+        response = client.post("/portfolios/backtest", json={**base_payload, "rebalance_strategy": strategy})
+        assert response.status_code == 200
+        assert response.json()["run_id"] is not None
+
+
     response = client.post(
         "/portfolios/optimize",
         json={
