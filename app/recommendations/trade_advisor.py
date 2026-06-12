@@ -9,23 +9,19 @@ from app.schemas.advice import DISCLAIMER, TradeAdviceOutput
 
 def generate_trade_advice(symbol: str, context: dict, as_of: date | None = None) -> TradeAdviceOutput:
     if get_settings().anthropic_api_key:
-        output = ClaudeClient().structured(
-            instruction=TRADE_ADVICE_INSTRUCTIONS,
-            context={"symbol": symbol, "as_of": as_of.isoformat() if as_of else None, **context},
-            output_model=TradeAdviceOutput,
-        )
+        try:
+            output = ClaudeClient().structured(
+                instruction=TRADE_ADVICE_INSTRUCTIONS,
+                context={"symbol": symbol, "as_of": as_of.isoformat() if as_of else None, **context},
+                output_model=TradeAdviceOutput,
+            )
+        except Exception as exc:
+            output = _fallback_advice(symbol, context, f"Claude analysis failed: {exc}")
     else:
-        output = TradeAdviceOutput(
-            action="watch",
-            asset=symbol,
-            confidence=0.0,
-            rationale="Claude API key is not configured, so the system will not generate an actionable suggestion.",
-            supporting_data=context.get("supporting_data", []),
-            risks=["ANTHROPIC_API_KEY is not configured; no LLM analysis was generated."],
-            invalidating_conditions=["Configure Claude and rerun analysis before using this suggestion."],
-            suggested_position_limit=0.0,
-            requires_human_confirmation=True,
-            disclaimer=DISCLAIMER,
+        output = _fallback_advice(
+            symbol,
+            context,
+            "ANTHROPIC_API_KEY is not configured; no LLM analysis was generated.",
         )
 
     cleaned = enforce_human_confirmation(output.model_dump())
@@ -35,3 +31,18 @@ def generate_trade_advice(symbol: str, context: dict, as_of: date | None = None)
         cleaned["confidence"] = 0.0
         cleaned["risks"] = [*cleaned.get("risks", []), *decision.flags]
     return TradeAdviceOutput.model_validate(cleaned)
+
+
+def _fallback_advice(symbol: str, context: dict, risk_message: str) -> TradeAdviceOutput:
+    return TradeAdviceOutput(
+        action="watch",
+        asset=symbol,
+        confidence=0.0,
+        rationale="The system could not produce a verified Claude analysis, so it will not generate an actionable suggestion.",
+        supporting_data=context.get("supporting_data", []),
+        risks=[risk_message],
+        invalidating_conditions=["Resolve the analysis error and rerun before considering any trade action."],
+        suggested_position_limit=0.0,
+        requires_human_confirmation=True,
+        disclaimer=DISCLAIMER,
+    )

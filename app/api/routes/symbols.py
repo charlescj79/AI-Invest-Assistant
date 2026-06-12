@@ -28,8 +28,11 @@ def upsert_symbol(payload: AssetCreate, db: Session = Depends(get_db)) -> Asset:
 
 
 @router.get("", response_model=list[AssetRead])
-def list_symbols(db: Session = Depends(get_db)) -> list[Asset]:
-    return list(db.scalars(select(Asset).order_by(Asset.symbol)))
+def list_symbols(active_only: bool = True, db: Session = Depends(get_db)) -> list[Asset]:
+    stmt = select(Asset)
+    if active_only:
+        stmt = stmt.where(Asset.is_active)
+    return list(db.scalars(stmt.order_by(Asset.symbol)))
 
 
 @router.get("/{symbol}", response_model=AssetRead)
@@ -37,4 +40,15 @@ def get_symbol(symbol: str, db: Session = Depends(get_db)) -> Asset:
     asset = db.scalar(select(Asset).where(Asset.symbol == symbol.upper()))
     if asset is None:
         raise HTTPException(status_code=404, detail="Symbol not found")
+    return asset
+
+
+@router.delete("/{symbol}", response_model=AssetRead)
+def deactivate_symbol(symbol: str, db: Session = Depends(get_db)) -> Asset:
+    asset = db.scalar(select(Asset).where(Asset.symbol == symbol.upper()))
+    if asset is None:
+        raise HTTPException(status_code=404, detail="Symbol not found")
+    asset.is_active = False
+    db.commit()
+    db.refresh(asset)
     return asset

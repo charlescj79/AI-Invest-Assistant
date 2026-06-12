@@ -41,6 +41,18 @@ st.markdown(
       background: #fff7ed; color: #7c2d12; border: 1px solid #fed7aa;
       border-radius: 18px; padding: 16px; font-weight: 600;
     }
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    .stTabs [data-baseweb="tab"] {
+      background: rgba(15,23,42,.10); border: 1px solid rgba(15,23,42,.18);
+      border-radius: 999px; color: #0f172a !important; padding: 10px 18px;
+      font-weight: 800; text-shadow: none;
+    }
+    .stTabs [aria-selected="true"] {
+      background: linear-gradient(135deg, #ef4444, #f97316) !important;
+      color: #ffffff !important; border-color: transparent !important;
+      box-shadow: 0 10px 24px rgba(239,68,68,.28);
+    }
+    .stTabs [data-baseweb="tab"] p { color: inherit !important; font-weight: 800; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -127,7 +139,13 @@ with market_tab:
     with left:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.subheader("标的池")
-        st.dataframe(symbols, use_container_width=True)
+        sort_by = st.selectbox("排序", ["symbol", "asset_type", "exchange", "id"], index=0)
+        symbols_frame = pd.DataFrame(symbols).sort_values(sort_by) if symbols else pd.DataFrame()
+        st.dataframe(symbols_frame, use_container_width=True)
+        delete_symbol = st.selectbox("删除/停用标的", symbol_options, key="delete_symbol")
+        if st.button("删除选中标的", key="delete_symbol_button"):
+            st.json(api("DELETE", f"/symbols/{delete_symbol}"))
+            st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
     with right:
         st.markdown('<div class="card">', unsafe_allow_html=True)
