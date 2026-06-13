@@ -19,40 +19,38 @@ st.set_page_config(page_title="AI Invest Assistant", page_icon="📈", layout="w
 st.markdown(
     """
     <style>
-    .stApp { background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #fff7ed 100%); }
-    .block-container { padding-top: 1.5rem; }
-    div[data-testid="stMetric"] {
-      background: rgba(255,255,255,.82); border: 1px solid rgba(15,23,42,.08);
-      border-radius: 18px; padding: 16px; box-shadow: 0 10px 28px rgba(15,23,42,.08);
-    }
+    .stApp { background: #f6f7fb; }
+    .block-container { padding-top: 1.2rem; max-width: 1280px; }
     .hero {
-      padding: 28px 30px; border-radius: 26px;
-      background: linear-gradient(120deg, #0f172a 0%, #1e3a8a 58%, #b45309 100%);
-      color: white; box-shadow: 0 18px 45px rgba(15,23,42,.24); margin-bottom: 18px;
+      padding: 18px 22px; border-radius: 18px;
+      background: #14213d; color: white; margin-bottom: 14px;
     }
-    .hero h1 { margin: 0; font-size: 2.3rem; letter-spacing: -0.04em; }
-    .hero p { margin: 8px 0 0 0; opacity: .88; font-size: 1.02rem; }
+    .hero h1 { margin: 0; font-size: 1.8rem; letter-spacing: -0.03em; }
+    .hero p { margin: 6px 0 0 0; opacity: .86; font-size: .98rem; }
     .card {
-      background: rgba(255,255,255,.88); border: 1px solid rgba(15,23,42,.08);
-      border-radius: 20px; padding: 18px; box-shadow: 0 12px 30px rgba(15,23,42,.08);
-      margin-bottom: 14px;
+      background: #ffffff; border: 1px solid #e5e7eb;
+      border-radius: 16px; padding: 16px; margin-bottom: 14px;
+    }
+    div[data-testid="stMetric"] {
+      background: #ffffff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px;
     }
     .risk-box {
       background: #fff7ed; color: #7c2d12; border: 1px solid #fed7aa;
-      border-radius: 18px; padding: 16px; font-weight: 600;
+      border-radius: 14px; padding: 14px; font-weight: 600;
     }
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
     .stTabs [data-baseweb="tab"] {
-      background: rgba(15,23,42,.10); border: 1px solid rgba(15,23,42,.18);
-      border-radius: 999px; color: #0f172a !important; padding: 10px 18px;
+      background: #ffffff; border: 1px solid #d1d5db;
+      border-radius: 10px; color: #111827 !important; padding: 10px 16px;
       font-weight: 800; text-shadow: none;
     }
-    .stTabs [aria-selected="true"] {
-      background: linear-gradient(135deg, #ef4444, #f97316) !important;
-      color: #ffffff !important; border-color: transparent !important;
-      box-shadow: 0 10px 24px rgba(239,68,68,.28);
-    }
+    .stTabs [aria-selected="true"] { background: #ef4444 !important; color: #ffffff !important; border-color: #ef4444 !important; }
     .stTabs [data-baseweb="tab"] p { color: inherit !important; font-weight: 800; }
+    .stButton > button {
+      min-height: 3.1rem; border-radius: 12px; font-size: 1.05rem; font-weight: 800;
+      border: 1px solid #111827; padding: .65rem 1rem;
+    }
+    .stButton > button[kind="primary"] { background: #ef4444; border-color: #ef4444; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -186,23 +184,19 @@ with single_bt_tab:
 
 with portfolio_tab:
     templates = load_templates()
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("组合模板")
-    c1, c2, c3 = st.columns([2, 2, 1])
-    selected_template = c1.selectbox("加载模板", ["<默认>", *sorted(templates.keys())])
-    template_name = c2.text_input("保存为", value="metals_nasdaq")
     if "portfolio_df" not in st.session_state:
         st.session_state.portfolio_df = default_portfolio_frame()
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("组合优化与回测")
+    c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
+    selected_template = c1.selectbox("模板", ["<默认>", *sorted(templates.keys())])
+    template_name = c2.text_input("保存为", value="metals_nasdaq")
     if selected_template != "<默认>" and c3.button("加载"):
         st.session_state.portfolio_df = pd.DataFrame(templates[selected_template])
-    if c3.button("保存"):
+    if c4.button("保存"):
         templates[template_name] = st.session_state.portfolio_df.to_dict("records")
         save_templates(templates)
         st.success(f"已保存模板：{template_name}")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("组合优化与回测")
     portfolio_df = st.data_editor(st.session_state.portfolio_df, num_rows="dynamic", use_container_width=True, key="portfolio_editor")
     st.session_state.portfolio_df = portfolio_df
     clean_portfolio = portfolio_df.dropna(subset=["symbol"]).copy()
